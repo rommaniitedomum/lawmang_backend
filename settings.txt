@@ -1,0 +1,14 @@
+- Lawmag > backend > 안 쪽에 가상환경 설정
+conda create --prefix C:/conda_envs/lawmang_env python=3.11
+
+- 가상환경 활성화
+conda activate C:/conda_envs/lawmang_env
+
+- 패키지 설치
+pip install -r requirements.txt
+
+# FastAPI 터미널에서 실행 (uvicorn 사용)
+uvicorn app.main:app --reload
+
+# 기본 api 확인
+localhost:8000

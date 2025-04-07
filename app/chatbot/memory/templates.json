@@ -1,0 +1,21 @@
+{
+  "DEFAULT_STRATEGY_TEMPLATE": {
+    "tone": "",
+    "structure": "",
+    "decision_tree": [],
+    "final_strategy_summary": "",
+    "recommended_links": [],
+    "evaluation": {
+      "needs_revision": false,
+      "reason": "",
+      "tavily_snippets": []
+    },
+    "explanation": ""
+  },
+  "DEFAULT_RESPONSE_TEMPLATE": {
+    "summary": "",
+    "explanation": "",
+    "hyperlinks": [],
+    "ref_question": ""
+  }
+}

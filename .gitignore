@@ -1,0 +1,37 @@
+# 가상 환경 (venv, Conda 환경 제외)
+venv/
+conda_envs/
+.env
+
+# Python 캐시 파일 및 컴파일된 코드
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 데이터베이스 파일 (로컬 DB 제외)
+*.db
+*.sqlite3
+
+# 로그 파일
+*.log
+logs/
+*.out
+
+# IDE 및 편집기 설정 파일 (개인 설정 제외)
+.vscode/
+.idea/
+*.sublime-workspace
+
+# FastAPI 실행 관련 임시 파일
+*.pid
+*.sock
+*.log
+
+
+# Jupyter Notebook 캐시
+.ipynb_checkpoints/
+
+
+# model 관련 똥
+*.cache

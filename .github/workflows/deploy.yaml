@@ -1,0 +1,46 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh/
+
+      - name: Store SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: ssh -i ~/.ssh/id_rsa -o ConnectTimeout=10 ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'echo "SSH connection successful"'
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_ENVS: ${{ secrets.ENVS }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o ConnectTimeout=10 ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            rm -rf ~/app_deploy &&
+            mkdir -p ~/app_deploy
+          '
+          scp -i ~/.ssh/id_rsa -o ConnectTimeout=10 -r ./* ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/app_deploy/
+          echo "${{ secrets.ENVS }}" > .env
+          scp -i ~/.ssh/id_rsa -o ConnectTimeout=10 .env ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/app_deploy/
+          ssh -i ~/.ssh/id_rsa -o ConnectTimeout=10 ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
+            cd ~/app_deploy &&
+            chmod +x deploy.sh &&
+            sudo chown ubuntu:ubuntu .env &&
+            sudo -E bash deploy.sh
+          '
