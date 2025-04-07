@@ -38,9 +38,5 @@ tavily-python
 elasticsearch[async]
 kiwipiepy
 
-# ✅ NLP 및 모델 관련
-transformers
-pandas
-
 # ✅ 벡터 DB 관련
 faiss-cpu
