@@ -10,7 +10,7 @@ def get_consultation_detail_by_id(consultation_id: int):
     
     Returns:
         dict: 해당 상담 사례의 상세 정보가 담긴 딕셔너리. 
-              결과가 없으면 None을 반환합니다.
+              결과가 없으면 None을 반환합니다. 
     """
     query = """
         SELECT id, category, sub_category, title, question, answer
