@@ -40,3 +40,4 @@ kiwipiepy
 
 # ✅ 벡터 DB 관련
 faiss-cpu
+pytz
