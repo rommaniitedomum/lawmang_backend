@@ -107,7 +107,7 @@ sudo systemctl restart nginx
 
 echo "🚀 Starting FastAPI application..."
 cd /var/www/lawmang_backend
-nohup /home/ubuntu/miniconda/envs/lawmang-env/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 > /var/log/lawmang_backend/uvicorn.log 2>&1 &
+nohup /home/ubuntu/miniconda/envs/lawmang-env/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 > /var/log/lawmang_backend/uvicorn.log 2>&1 &
 
 sleep 5
 
