@@ -103,11 +103,16 @@ pip install -r requirements.txt
 
 echo "🚦 Testing and restarting Nginx..."
 sudo nginx -t
+sudo systemctl daemon-reload  # 경고 제거
 sudo systemctl restart nginx
 
 echo "🚀 Starting FastAPI application..."
 cd /var/www/lawmang_backend
-nohup /home/ubuntu/miniconda/envs/lawmang-env/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 > /var/log/lawmang_backend/uvicorn.log 2>&1 &
+
+# ✅ 반드시 ubuntu 사용자로 실행
+sudo -u ubuntu nohup /home/ubuntu/miniconda/envs/lawmang-env/bin/uvicorn \
+  app.main:app --host 0.0.0.0 --port 8000 --workers 2 \
+  > /var/log/lawmang_backend/uvicorn.log 2>&1 &
 
 sleep 5
 
