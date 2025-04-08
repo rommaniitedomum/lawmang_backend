@@ -221,7 +221,6 @@ async def update_llm2_template_with_es(template_data: Dict, user_query: str) -> 
         }
     )
 
-
 async def evalandsave_llm2_template_with_es(
     template_data: Dict, user_query: str
 ) -> None:
@@ -235,42 +234,54 @@ async def evalandsave_llm2_template_with_es(
         max_score = es_result.get("max_score", 0)
         return extract_top_keywords(hits, top_k=top_k) or ["기본"], max_score
 
-    # ✅ 1. Summary용 키워드 + 점수
-    summary_keywords, summary_score = await get_keywords_and_score(
-        [user_query, template.get("summary", "")]
+    # ✅ 모든 검색 프리패치 → 병렬 실행
+    tasks = await asyncio.gather(
+        get_keywords_and_score([user_query, template.get("summary", "")]),  # 1
+        get_keywords_and_score(
+            [
+                template.get("explanation", ""),
+                strategy.get("final_strategy_summary", ""),
+            ]
+        ),  # 2
+        get_keywords_and_score([template.get("ref_question", "")]),  # 3
+        get_keywords_and_score(
+            [
+                strategy.get("final_strategy_summary", ""),
+                " ".join(strategy.get("decision_tree", [])),
+            ]
+        ),  # 4
+        get_keywords_and_score(
+            [precedent.get("summary", ""), precedent.get("title", "")]
+        ),  # 5
     )
-    updated_summary = "updated.summary.from.es: " + ", ".join(summary_keywords)
-    template["summary"] = updated_summary
-    template["summary_raw"] = template.get("summary", "")  # 원문 보존
+
+    # ✅ 결과 할당
+    (summary_keywords, summary_score) = tasks[0]
+    (explanation_keywords, explanation_score) = tasks[1]
+    (ref_keywords, ref_score) = tasks[2]
+    (strat_keywords, _) = tasks[3]
+    (prec_keywords, _) = tasks[4]
+
+    # ✅ Summary
+    template["summary_raw"] = template.get("summary", "")
+    template["summary"] = "updated.summary.from.es: " + ", ".join(summary_keywords)
     template["summary_score"] = summary_score
 
-    # ✅ 2. Explanation
-    explanation_keywords, explanation_score = await get_keywords_and_score(
-        [template.get("explanation", ""), strategy.get("final_strategy_summary", "")]
-    )
-    updated_explanation = "updated.explanation.from.es: " + ", ".join(
+    # ✅ Explanation
+    template["explanation_raw"] = template.get("explanation", "")
+    template["explanation"] = "updated.explanation.from.es: " + ", ".join(
         explanation_keywords
     )
-    template["explanation"] = updated_explanation
-    template["explanation_raw"] = template.get("explanation", "")
     template["explanation_score"] = explanation_score
 
-    # ✅ 3. Ref question
-    ref_keywords, ref_score = await get_keywords_and_score(
-        [template.get("ref_question", "")]
-    )
-    updated_ref_question = "updated.ref_question.from.es: " + ", ".join(ref_keywords)
-    template["ref_question"] = updated_ref_question
+    # ✅ Ref question
     template["ref_question_raw"] = template.get("ref_question", "")
+    template["ref_question"] = "updated.ref_question.from.es: " + ", ".join(
+        ref_keywords
+    )
     template["ref_question_score"] = ref_score
 
-    # ✅ 4. Strategy summary
-    strat_keywords, _ = await get_keywords_and_score(
-        [
-            strategy.get("final_strategy_summary", ""),
-            " ".join(strategy.get("decision_tree", [])),
-        ]
-    )
+    # ✅ Strategy
     strategy["final_strategy_summary"] = "updated.strategy.from.es: " + ", ".join(
         strat_keywords
     )
@@ -279,10 +290,7 @@ async def evalandsave_llm2_template_with_es(
         for kw in strat_keywords
     ]
 
-    # ✅ 5. Precedent
-    prec_keywords, _ = await get_keywords_and_score(
-        [precedent.get("summary", ""), precedent.get("title", "")]
-    )
+    # ✅ Precedent
     precedent["summary"] = "updated.precedent.from.es: " + ", ".join(prec_keywords)
     precedent["title"] = f"{prec_keywords[0]} 관련 증강 판례"
 

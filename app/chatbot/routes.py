@@ -76,7 +76,7 @@ async def chatbot_initial(request: QueryRequest):
         asyncio.create_task(update_llm2_template_with_es(cached_template, user_query))
 
     return {
-        "mcq_question": result.get("mcq_question")or "⚠️ fallback 응답이 없습니다.",
+        "mcq_question": result.get("mcq_question")or "⚠️ 법률적으로 관계가 없습니다.",
         "yes_count": result.get("yes_count", 0),
         "is_mcq": result.get(
             "is_mcq", True

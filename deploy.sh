@@ -29,12 +29,7 @@ else
 fi
 
 echo "🔍 Checking .env file..."
-if [ -f .env ]; then
-    echo ".env file exists"
-    ls -la .env
-else
-    echo "⚠️ Warning: .env file not found"
-fi
+ls -la .env || echo "⚠️ Warning: .env file not found"
 
 # 미니콘다 설치
 if [ ! -d "/home/ubuntu/miniconda" ]; then
@@ -45,11 +40,10 @@ if [ ! -d "/home/ubuntu/miniconda" ]; then
     rm /tmp/miniconda.sh
 fi
 
-# PATH 설정
 export PATH="/home/ubuntu/miniconda/bin:$PATH"
 source /home/ubuntu/miniconda/bin/activate
 
-# Nginx 설치 및 교체 (extras)
+# Nginx 설치 및 교체
 if ! dpkg -l | grep -q nginx-extras; then
     echo "🔄 Replacing existing Nginx with nginx-extras..."
     sudo apt-get remove -y nginx nginx-core nginx-full || true
@@ -61,10 +55,7 @@ fi
 
 # Nginx 설정
 echo "⚙️ Configuring Nginx..."
-if [ ! -d "/etc/nginx/sites-available" ]; then
-    sudo mkdir -p /etc/nginx/sites-available
-fi
-
+sudo mkdir -p /etc/nginx/sites-available
 sudo bash -c 'cat > /etc/nginx/sites-available/myapp <<EOF
 server {
     listen 80;
@@ -77,6 +68,12 @@ server {
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
         proxy_cache_bypass \$http_upgrade;
+
+        # ✅ 타임아웃 설정 (기본 60초 → 180초)
+        proxy_connect_timeout       180;
+        proxy_send_timeout          180;
+        proxy_read_timeout          180;
+        send_timeout                180;
     }
 }
 EOF'
@@ -89,7 +86,7 @@ sudo touch /var/log/lawmang_backend/uvicorn.log
 sudo chown -R ubuntu:ubuntu /var/log/lawmang_backend
 
 echo "🧹 Cleaning up existing processes..."
-sudo pkill uvicorn || true
+sudo pkill -f uvicorn || true
 sudo systemctl stop nginx || true
 
 sudo chown -R ubuntu:ubuntu /var/www/lawmang_backend
@@ -107,7 +104,9 @@ sudo systemctl restart nginx
 
 echo "🚀 Starting FastAPI application..."
 cd /var/www/lawmang_backend
-nohup /home/ubuntu/miniconda/envs/lawmang-env/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 3 > /var/log/lawmang_backend/uvicorn.log 2>&1 &
+sudo -u ubuntu nohup /home/ubuntu/miniconda/envs/lawmang-env/bin/uvicorn \
+  app.main:app --host 0.0.0.0 --port 8000 --workers 1 \
+  > /var/log/lawmang_backend/uvicorn.log 2>&1 &
 
 sleep 5
 
@@ -115,7 +114,6 @@ echo "📄 Recent application logs:"
 tail -n 20 /var/log/lawmang_backend/uvicorn.log || true
 
 echo "✅ Deployment completed successfully! 🚀"
-
 echo "📡 Checking service status..."
 ps aux | grep uvicorn
 sudo systemctl status nginx

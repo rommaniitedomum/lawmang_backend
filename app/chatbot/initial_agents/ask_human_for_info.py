@@ -99,8 +99,7 @@ class AskHumanAgent:
         )
         response = await self.llm.ainvoke(prompt)
         return response.content.strip()
-    
-    
+
     async def ask_human(
         self,
         user_query,
@@ -109,8 +108,38 @@ class AskHumanAgent:
         template_data=None,
         initial_response: Optional[str] = None,
     ):
-        # ✅ 1. 사용자 ES 점수
-        es_result = await async_ES_search_one([user_query])
+        # print("🔍 [ask_human] ES prefetch 시작")
+        es_task = asyncio.create_task(async_ES_search_one([user_query]))
+
+        # print("📦 [ask_human] 템플릿 로딩 중...")
+        cached_data = retrieve_template_from_memory()
+        accuracy = 0
+        evaluating_now = False
+
+        if cached_data and cached_data.get("built_by_llm2"):
+            if not cached_data.get("updated_by_es"):
+                # print("🧠 [ask_human] ES 기반 평가 수행 중...")
+                evaluating_now = True
+                await evalandsave_llm2_template_with_es(cached_data, user_query)
+                cached_data["updated_by_es"] = True
+
+            template_score = max(
+                cached_data.get("template", {}).get("summary_score", 0),
+                cached_data.get("template", {}).get("explanation_score", 0),
+                cached_data.get("template", {}).get("ref_question_score", 0),
+            )
+            accuracy = calculate_llm2_accuracy_score(template_score, 0)
+            cached_data["llm2_accuracy_score"] = accuracy
+            store_template_in_memory(cached_data)
+        elif cached_data:
+            accuracy = cached_data.get("llm2_accuracy_score", 0)
+        else:
+            accuracy = 0
+
+        # print("⏳ [ask_human] ES 결과 수집 대기")
+        es_result = await es_task
+        # print(f"✅ [ask_human] ES 완료, max_score={es_result.get('max_score')}")
+
         max_score = es_result.get("max_score", 0)
         hits = es_result.get("hits", [])
 

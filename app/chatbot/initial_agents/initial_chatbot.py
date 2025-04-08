@@ -1,4 +1,5 @@
 import os
+import asyncio
 import sys
 from dotenv import load_dotenv
 from langchain.memory import ConversationBufferMemory
@@ -134,6 +135,10 @@ class LegalChatbot:
         current_yes_count: int = 0,
         stop_event: Event = None,
     ):
+        # print("🔍 [1] ES 사전 검색(prefetch) 시작")
+        es_task = asyncio.create_task(self.build_es_context(user_query))
+
+        # print("🧠 [2] 키워드 추출 및 쿼리 분석")
         query_keywords = faiss_kiwi.extract_keywords(user_query, top_k=5)
         faiss_keywords = faiss_kiwi.extract_top_keywords_faiss(
             user_query, self.faiss_db, top_k=5
@@ -144,8 +149,9 @@ class LegalChatbot:
         query_type = classify_legal_query(user_query, set(faiss_keywords))
         chat_history = self.memory.load_memory_variables({}).get("chat_history", "")
 
-        # ✅ ES 유사 상담 내용 추출
-        es_context = await self.build_es_context(user_query)
+        # print("⏳ [3] ES 검색 결과 대기")
+        es_context = await es_task
+        # print("✅ [4] ES context 확보 완료")
 
         # ✅ 프롬프트 구성
         prompt = self.prompt_template.format(
@@ -158,19 +164,15 @@ class LegalChatbot:
             es_context=es_context,
         )
 
-        full_response = ""
-        is_no_detected = False
-
-        # LLM 실행 (스트리밍 X)
+        # print("💬 [5] LLM 응답 생성 시작")
         response = await self.llm.ainvoke(prompt)
         full_response = response.content.strip()
 
-        # ###no 감지
         is_no_detected = "###no" in full_response.lower()
         if is_no_detected and stop_event:
             stop_event.set()
 
-
+        # print("💾 [6] 메모리 저장 및 결과 반환")
         self.memory.save_context(
             {"user_query": user_query}, {"response": full_response}
         )
