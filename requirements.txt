@@ -30,6 +30,7 @@ typing_extensions==4.12.2
 
 
 # ✅ LangChain 및 벡터 DB 관련
+langchain_teddynote
 langchain-core
 langchain
 langchain-community
