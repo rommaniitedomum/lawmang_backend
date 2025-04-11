@@ -70,10 +70,10 @@ server {
         proxy_cache_bypass \$http_upgrade;
 
         # ✅ 타임아웃 설정 (기본 60초 → 180초)
-        proxy_connect_timeout       180;
-        proxy_send_timeout          180;
-        proxy_read_timeout          180;
-        send_timeout                180;
+        proxy_connect_timeout       240;
+        proxy_send_timeout          240;
+        proxy_read_timeout          240;
+        send_timeout                240;
     }
 }
 EOF'
