@@ -58,23 +58,6 @@ class llmCOD_tool_sets:
 
     # ----------------------------------------------------------------------------------------------
 
-    # @staticmethod
-    # def user_log():
-    #     """사용자의 최근 상담 기록 검색"""
-    #     return Tool(
-    #         name="GetUserLogs",
-    #         func=get_user_logs,
-    #         description="사용자의 최신 상담 기록을 검색합니다.",
-    #     )
-
-    # @staticmethod
-    # def user_log_history():
-    #     """사용자의 과거 상담 기록 검색"""
-    #     return Tool(
-    #         name="GetUserLogsOld",
-    #         func=get_user_logs_old,
-    #         description="사용자의 과거 상담 기록을 검색합니다.",
-    #     )
 
 # ---------------------------------------------------------------------------
 
