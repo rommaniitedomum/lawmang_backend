@@ -16,7 +16,6 @@ def build_relevance_prompt(user_query: str, consultation_results: List[Dict]) ->
     )
     return f"""
 당신은 법률 상담 전문가입니다.
-Let's think step by step
 
 사용자의 질문은 다음과 같습니다:
 \"{user_query}\"
@@ -72,7 +71,6 @@ def build_choose_one_prompt(user_query: str, consultation_results: List[Dict]) -
     )
     return f"""
 당신은 법률 상담 전문가입니다.
-Let's think step by step and explain why
 
 사용자의 질문은 다음과 같습니다:
 "\{user_query}\"
