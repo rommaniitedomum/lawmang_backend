@@ -1,6 +1,5 @@
 <a name="top"></a>
-[![Legacy project](![lawmang](https://github.com/user-attachments/assets/89d9e9ef-fea7-48ea-a545-15ef7f3d0b5b)
-)]
+![lawmang](https://github.com/user-attachments/assets/bf5ca45e-9eb9-4aef-9109-fc353d6f5808)
 
 ![JavaScript Badge](https://img.shields.io/badge/JavaScript-ES6+-yellow?logo=javascript&logoColor=white&style=flat)
 ![Python Badge](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white&style=flat)
