@@ -14,33 +14,106 @@
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=githubactions&logoColor=white&style=flat)
 [![OpenAI API](https://img.shields.io/badge/OpenAI%20API-GPT--3.5turbo-brightgreen.svg?logo=OpenAI&logoColor=white)](https://openai.com/)
 
+
+
+# Lawmang 프로젝트
+
 ## 목차
 
 - [설명](#-설명)
-- [구성](#-구성)
-- [개발환경](#-개발환경설정)
-- [개발로그](#-개발로그)
-- [디버깅로그](#-디버깅로그)
-- [랭체인 구성](#-랭체인)
-- [자료](#-자료)
-- [연락처](#%EF%B8%8F-연락처)
+- [주요 서비스](#-주요-서비스)
+- [시스템 구조](#-시스템-구조)
+- [개발환경 설정](#-개발환경-설정)
+- [구성 파일](#-구성-파일)
+- [연락처](#-연락처)
 
 ## 🏛️ 설명
 
-**Lawmang**: AI 변호사 서비스
+**Lawmang**은 AI를 활용해 다양한 법률 문제를 효율적으로 해결할 수 있도록 돕는 통합 법률 플랫폼입니다.  
+사용자가 직면한 다양한 법률적 이슈에 대해 명확한 해답과 심층 분석 자료를 제공합니다.
 
-- **딥 리서치**: 나도 모르겠음 다른사람이 작성 
-- **변호사 상담 챗봇**: Re-act적인 3.5turbo 로 탄탄한 plan 을 가지고 상담을 하는 AI 변호사   
-- **데이터연결**:  API firecrawl/ tavily_search +  SQL_trgm + NOSQL Elastic_search + 자체 훈련 faiss   
-- **유지보수**: 정기적인 업데이트 실시, 점검
+주요 목표:
 
-## 🎓 구성
+- 법률 지식이 없는 사용자도 쉽게 접근 가능한 인터페이스 제공
+- 정확하고 신속한 법률 정보 제공
+- 신뢰성 높은 외부 데이터 소스를 기반으로 서비스 구축
 
-| **기능**            | **설명**                                  | **주요 파일**                                                             |
-|---------------------|------------------------------------------|---------------------------------------------------------------------------|
-| **AI 어시스턴스**   | 사이트 주력 AI 서비스들                   | `Chatbot`,`Chatbot_term`, `deepresearch`,                                |
-| **데이터베이스**    | 데이터베이스 연결 및 설정 관리            | `core/database.py`, `services/*.py`                                        |
-| **라우트**          | 계정, 라우팅 처리| `accountRoutes.js`, `eventRoutes.js`, `postgresSQLRoutes.js`             |
+## 🚀 주요 서비스
+
+### 1️⃣ 법률 상담 챗봇 (Legal Chatbot)
+- 사용자의 질문을 분석하여 즉각적이고 정확한 법률상담 제공
+- 법률 사례 및 판례 검색을 통한 상세한 법률 정보 제공
+- Elasticsearch, PostgreSQL, FAISS 기반 검색 엔진 활용으로 높은 정확도 보장
+
+### 2️⃣ 법률 용어 검색 서비스 (Legal Terms Search)
+- 법률 전문 용어에 대한 정의와 설명 제공
+- 빠르고 정확한 벡터 기반 검색을 통해 관련된 법률 용어를 쉽게 검색 가능
+
+### 3️⃣ 딥 리서치 서비스 (Deep Research)
+- 특정 법률 이슈에 대해 웹 기반의 심층 리서치 수행
+- Firecrawl, Tavily API를 활용한 최신 법률 정보 및 자료 수집
+- 수집된 자료를 바탕으로 요약 보고서 및 세부 리포트 생성
+
+### 4️⃣ 사용자 개인화 서비스 (Personalization)
+- 상담 기록 및 법률 상담 이력 관리
+- 메모 작성 및 개인 기록 관리 기능 제공
+- 사용자 맞춤형 콘텐츠 제공 (최근 조회한 상담, 개인 히스토리 등)
+
+## 🗂️ 시스템 구조
+
+```
+app/
+├── chatbot/              # 법률상담 및 챗봇 시스템
+│   ├── initial_agents/   # 초기 사용자 질문 처리 및 유도 질문 생성
+│   ├── tool_agents/      # 상담 전략 및 판례 관리
+│   │   ├── qualifier.py
+│   │   ├── planner.py
+│   │   ├── precedent.py
+│   │   └── executor/     # 상담 템플릿 및 최종 답변 관리
+│   ├── vectorstore/      # FAISS 벡터 DB 관리
+│   └── memory/           # 글로벌 캐시 및 메모리 관리
+│
+├── chatbot_term/         # 법률 용어 검색 시스템
+│   └── vectorstore/      # 용어 검색 벡터 DB 관리
+│
+├── core/                 # 핵심 시스템 환경설정 및 DB 관리
+│   ├── database.py       # 데이터베이스 연결 및 설정 관리
+│   └── dependencies.py   # 의존성 주입 관리
+│
+├── deepresearch/         # 웹 기반 심층 리서치 서비스
+│   ├── core/             # API 클라이언트 및 GPT 관리
+│   ├── prompts/          # 리포트 생성 및 시스템 프롬프트 관리
+│   ├── research/         # 키워드 생성 및 검색 처리 관리
+│   └── reporting/        # 리포트 빌더 및 결과 보고서 생성
+│
+├── models/               # 데이터 모델 정의 (사용자, 히스토리 등)
+├── routes/               # API 라우팅 관리
+├── schemas/              # 데이터 스키마 관리 (Pydantic 모델)
+└── services/             # 비즈니스 로직 및 서비스 로직 관리
+    ├── consultation.py       # 법률 상담 서비스 관리
+    ├── memo_service.py       # 사용자 메모 관리
+    ├── history_service.py    # 사용자 히스토리 관리
+    ├── precedent_service.py  # 판례 서비스 관리
+    └── user_service.py       # 사용자 서비스 관리
+```
+
+### 데이터베이스 연결
+
+- **PostgreSQL**: 법률 상담 기록 및 사용자 정보 관리  
+- **Elasticsearch**: 효율적이고 빠른 검색 지원 (법률상담 데이터)  
+- **FAISS**: 법률 용어 벡터 검색 지원  
+
+## 📄 구성 파일
+
+| 기능                 | 설명                           | 주요 파일 |
+|----------------------|--------------------------------|-----------|
+| API 라우팅            | 전체 서비스 API 라우팅 관리    | `routes/*.py` |
+| 데이터 관리           | 데이터 스키마 및 모델 정의 관리 | `models/*.py`, `schemas/*.py` |
+| 비즈니스 로직 관리     | 상담, 메모, 사용자 등 로직 관리 | `services/*.py` |
+| 핵심 시스템 관리       | 데이터베이스 및 설정 관리      | `core/*.py` |
+| 챗봇 시스템 관리       | 상담 챗봇 및 관련 로직 관리    | `chatbot/*.py`, `chatbot/tool_agents/*.py` |
+| 법률 용어 검색 서비스  | 법률 용어 벡터 검색 관리       | `chatbot_term/*.py` |
+| 딥 리서치 관리         | 심층 웹 리서치 관리            | `deepresearch/*.py` |
 
 ## 💻 개발환경설정
 
@@ -82,12 +155,13 @@ localhost:8000
 - [(개인 보고서)시스템 목적 및 기술적 구현.docx]()
 
 
-## 🗨️ 연락처
+## 📞 연락처
 
-Lawmang service와 관련된 문의, 서비스, 정보에 대해 더 알고 싶으시면 언제든지 저희에게 문의하세요. 지원을 제공하고 모든 질문에 답변드릴 준비가 되어 있습니다. 아래는 저희 팀과 연락할 수 있는 방법입니다:
+프로젝트와 관련된 문의사항이나 협업 요청은 아래 연락처로 연락 부탁드립니다.
 
-- **이메일**: 문의/지원 [support@legacy.com](mailto:qkrwns982@gmail.com).
-- **웹사이트**: 유산사이트().
-- **기타문의**: 카카오 플러스
+- **이메일**: [support@lawmang.com](mailto:support@lawmang.com)
+- **웹사이트**: [https://lawmang.com](https://lawmang.com)
+- **카카오톡**: Lawmang 카카오톡 플러스친구 (준비중)
+
 
 [Back to top](#top)
