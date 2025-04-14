@@ -1,15 +1,17 @@
 <a name="top"></a>
 ![lawmang](https://github.com/user-attachments/assets/bf5ca45e-9eb9-4aef-9109-fc353d6f5808)
 
-![JavaScript Badge](https://img.shields.io/badge/JavaScript-ES6+-yellow?logo=javascript&logoColor=white&style=flat)
 ![Python Badge](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white&style=flat)
 ![OS](https://img.shields.io/badge/OS-ubuntu%2C%20windows-0078D4)
 ![Deployment](https://img.shields.io/badge/Deployment-AWS%20%2B%20Vercel-orange?logo=amazonaws&logoColor=white&style=flat)
-![Database](https://img.shields.io/badge/Database-PostgreSQL-blue?logo=postgresql&logoColor=white&style=flat)
-![API](https://img.shields.io/badge/API-Google%20Maps-4285F4?logo=googlemaps&logoColor=white&style=flat)
+
+![Uvicorn](https://img.shields.io/badge/Server-uvicorn-%2337c2b1?logo=fastapi&logoColor=white&style=flat)
+![LangChain](https://img.shields.io/badge/Framework-LangChain-%231a73e8?logo=langchain&logoColor=white&style=flat)
+
+![Database](https://img.shields.io/badge/Database-PostgreSQL%20%7C%20Elasticsearch-blue?logo=postgresql&logoColor=white&style=flat)
+![API](https://img.shields.io/badge/API-Tavily%20%26%20Firecrawl-orange?logo=api&logoColor=white&style=flat)
+
 ![Environment](https://img.shields.io/badge/Environment-Anaconda-yellowgreen?logo=anaconda&logoColor=white&style=flat)
-![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Redux%20%2B%20TailwindCSS-blue?logo=react&logoColor=white&style=flat)
-![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-green?logo=nodedotjs&logoColor=white&style=flat)
 ![IDE](https://img.shields.io/badge/IDE-VS%20Code%20%2B%20Cursor.ai-blue?logo=visualstudiocode&logoColor=white&style=flat)
 ![GitHub](https://img.shields.io/badge/Version%20Control-GitHub-black?logo=github&logoColor=white&style=flat)
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=githubactions&logoColor=white&style=flat)
