@@ -466,138 +466,70 @@ async def async_ES_search_one(keywords):
 
 # ------------------------------------------------------------------------------
 
-# async def async_ES_search_updater(keywords, fragment_size=100):
-#     """Elasticsearch 기반 상담 검색 (LLM 입력 최적화: 최대 100글자 하이라이트)"""
-#     index_name = "es_legal_consultation"
-
-#     must_clauses = [
-#         {
-#             "multi_match": {
-#                 "query": kw,
-#                 "fields": [
-#                     "title^2",
-#                     "sub_category^1.5",
-#                     "question",
-#                     "answer",
-#                 ],
-#                 "type": "most_fields",
-#                 "operator": "or",
-#             }
-#         }
-#         for kw in keywords
-#     ]
-
-#     query_body = {
-#         "size": 1,
-#         "query": {"bool": {"must": must_clauses}},
-#         "highlight": {
-#             "fields": {
-#                 "question": {"fragment_size": fragment_size, "number_of_fragments": 1},
-#                 "answer": {"fragment_size": fragment_size, "number_of_fragments": 1},
-#             }
-#         },
-#     }
-
-#     try:
-#         response = await es.search(index=index_name, body=query_body)
-#         hits = response["hits"]["hits"]
-#         max_score = response["hits"].get("max_score", 0.0)
-
-#         if not hits:
-#             return {"max_score": 0.0, "hits": []}
-
-#         results = []
-#         for hit in hits:
-#             src = hit["_source"]
-#             title = src.get("title", "")
-#             highlight = hit.get("highlight", {})
-
-#             question_highlight = highlight.get(
-#                 "question", [src.get("question", "")[:fragment_size]]
-#             )[0]
-#             answer_highlight = highlight.get(
-#                 "answer", [src.get("answer", "")[:fragment_size]]
-#             )[0]
-
-#             if title:
-#                 results.append(
-#                     {
-#                         "title": title,
-#                         "question_snippet": question_highlight,
-#                         "answer_snippet": answer_highlight,
-#                     }
-#                 )
-
-#         return {"max_score": max_score, "hits": results}
-
-#     except Exception as e:
-#         return {"max_score": 0.0, "hits": []}
-
 async def async_ES_search_updater(keywords, fragment_size=100):
-    es = AsyncElasticsearch()
+    """Elasticsearch 기반 상담 검색 (LLM 입력 최적화: 최대 100글자 하이라이트)"""
+    index_name = "es_legal_consultation"
 
-    # ✅ body = [{header}, {body}, {header}, {body}, ...]
-    msearch_body = []
-    for kw in keywords:
-        msearch_body.append({"index": "es_legal_consultation"})
-        msearch_body.append(
-            {
-                "size": 1,
-                "query": {
-                    "multi_match": {
-                        "query": kw,
-                        "fields": ["title^2", "sub_category^1.5", "question", "answer"],
-                        "type": "most_fields",
-                        "operator": "or",
-                    }
-                },
-                "highlight": {
-                    "fields": {
-                        "question": {
-                            "fragment_size": fragment_size,
-                            "number_of_fragments": 1,
-                        },
-                        "answer": {
-                            "fragment_size": fragment_size,
-                            "number_of_fragments": 1,
-                        },
-                    }
-                },
+    must_clauses = [
+        {
+            "multi_match": {
+                "query": kw,
+                "fields": [
+                    "title^2",
+                    "sub_category^1.5",
+                    "question",
+                    "answer",
+                ],
+                "type": "most_fields",
+                "operator": "or",
             }
-        )
+        }
+        for kw in keywords
+    ]
 
-    # ✅ msearch 실행
+    query_body = {
+        "size": 1,
+        "query": {"bool": {"must": must_clauses}},
+        "highlight": {
+            "fields": {
+                "question": {"fragment_size": fragment_size, "number_of_fragments": 1},
+                "answer": {"fragment_size": fragment_size, "number_of_fragments": 1},
+            }
+        },
+    }
+
     try:
-        res = await es.msearch(body=msearch_body)
+        response = await es.search(index=index_name, body=query_body)
+        hits = response["hits"]["hits"]
+        max_score = response["hits"].get("max_score", 0.0)
 
-        best_hit = {"max_score": 0.0, "hits": []}
+        if not hits:
+            return {"max_score": 0.0, "hits": []}
 
-        for r in res["responses"]:
-            hits = r.get("hits", {}).get("hits", [])
-            if not hits:
-                continue
-            hit = hits[0]
-            score = hit.get("_score", 0.0)
-            if score > best_hit["max_score"]:
-                src = hit["_source"]
-                hl = hit.get("highlight", {})
-                best_hit = {
-                    "max_score": score,
-                    "hits": [
-                        {
-                            "title": src.get("title", ""),
-                            "question_snippet": hl.get(
-                                "question", [src.get("question", "")[:fragment_size]]
-                            )[0],
-                            "answer_snippet": hl.get(
-                                "answer", [src.get("answer", "")[:fragment_size]]
-                            )[0],
-                        }
-                    ],
-                }
+        results = []
+        for hit in hits:
+            src = hit["_source"]
+            title = src.get("title", "")
+            highlight = hit.get("highlight", {})
 
-        return best_hit
+            question_highlight = highlight.get(
+                "question", [src.get("question", "")[:fragment_size]]
+            )[0]
+            answer_highlight = highlight.get(
+                "answer", [src.get("answer", "")[:fragment_size]]
+            )[0]
+
+            if title:
+                results.append(
+                    {
+                        "title": title,
+                        "question_snippet": question_highlight,
+                        "answer_snippet": answer_highlight,
+                    }
+                )
+
+        return {"max_score": max_score, "hits": results}
 
     except Exception as e:
-        print(f"❌ MSEARCH Error: {e}")
         return {"max_score": 0.0, "hits": []}
+
