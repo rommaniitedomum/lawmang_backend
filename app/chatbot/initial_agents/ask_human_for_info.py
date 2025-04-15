@@ -225,9 +225,6 @@ class AskHumanAgent:
                 },
                 "precedent": {},
             }
-
-
-
         # ✅ 7. 후속 질문 생성
         mcq_q = await self.generate_mcq_question(
             user_query, llm1_answer or "", total_yes_count, template_data
