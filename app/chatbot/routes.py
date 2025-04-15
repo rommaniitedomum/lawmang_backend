@@ -2,7 +2,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import os
-import json
 import sys
 import asyncio
 from asyncio import Lock
@@ -14,9 +13,7 @@ from app.chatbot.initial_agents.controller import run_initial_controller
 from app.chatbot.tool_agents.controller import run_full_consultation
 from app.chatbot.tool_agents.utils.utils import faiss_kiwi,update_llm2_template_with_es
 from app.chatbot.memory.global_cache import retrieve_template_from_memory
-from fastapi.responses import StreamingResponse
 from fastapi import FastAPI
-
 
 # ✅ 락: 중복 실행 방지 (LLM2 관련)
 llm2_lock = Lock()
@@ -50,52 +47,41 @@ class QueryRequest(BaseModel):
     query: str
 
 
+# ✅ 1. LLM1: 초기 응답만
 @router.post("/initial")
-async def chatbot_initial_stream(request: QueryRequest):
+async def chatbot_initial(request: QueryRequest):
     user_query = request.query.strip()
     if not user_query:
         raise HTTPException(status_code=400, detail="질문이 비어 있습니다.")
 
-    async def generate():
-        try:
-            yield "data: 로딩 중...\n\n"
+    faiss_db = load_faiss()
+    if not faiss_db:
+        raise HTTPException(status_code=500, detail="FAISS 로드 실패")
 
-            faiss_db = load_faiss()
-            if not faiss_db:
-                yield 'data: {"error": "FAISS 로드 실패"}\n\n'
-                return
+    stop_event = asyncio.Event()
+    template_data = {}
 
-            stop_event = asyncio.Event()
-            template_data = {}
+    result = await run_initial_controller(
+        user_query=user_query,
+        faiss_db=faiss_db,
+        current_yes_count=0,
+        template_data=template_data,
+        stop_event=stop_event,
+        
+    )
 
-            result = await run_initial_controller(
-                user_query=user_query,
-                faiss_db=faiss_db,
-                current_yes_count=0,
-                template_data=template_data,
-                stop_event=stop_event,
-            )
+    # ✅ 비동기 후처리: 템플릿 증강 (LLM2 템플릿이 있는 경우에만)
+    cached_template = retrieve_template_from_memory()
+    if cached_template and cached_template.get("built_by_llm2"):
+        asyncio.create_task(update_llm2_template_with_es(cached_template, user_query))
 
-            cached_template = retrieve_template_from_memory()
-            if cached_template and cached_template.get("built_by_llm2"):
-                asyncio.create_task(
-                    update_llm2_template_with_es(cached_template, user_query)
-                )
-
-            payload = {
-                "mcq_question": result.get("mcq_question")
-                or "⚠️ 법률적으로 관계가 없습니다.",
-                "yes_count": result.get("yes_count", 0),
-                "is_mcq": result.get("is_mcq", True),
-            }
-
-            yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-
-        except Exception as e:
-            error_msg = {"error": f"서버 오류: {str(e)}"}
-            yield f"data: {json.dumps(error_msg, ensure_ascii=False)}\n\n"
-
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    return {
+        "mcq_question": result.get("mcq_question")or "⚠️ 법률적으로 관계가 없습니다.",
+        "yes_count": result.get("yes_count", 0),
+        "is_mcq": result.get(
+            "is_mcq", True
+        ),  # ✅ fallback 메시지도 프론트에서 렌더링되도록
+    }
 
 
 # ✅ 2. LLM2 빌드 전용: 전략/판례 캐싱만 수행

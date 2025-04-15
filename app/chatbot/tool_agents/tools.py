@@ -378,23 +378,32 @@ def init_es_client():
 init_es_client()
 #----------------------------------------------------------------
 async def async_ES_search(keywords):
-    """최적화된 Elasticsearch 기반 상담 검색 (다중 키워드 OR 조건)"""
+    """Elasticsearch 기반 상담 검색 (LLM 입력 최적화)"""
     index_name = "es_legal_consultation"
 
-    # 🔧 모든 키워드를 하나로 병합하여 효율적인 단일 검색
-    combined_query = " ".join(keywords)
+    # print(f"✅ [search_keywords 확인]: {keywords}")
+    # print(f"🔍 [ES 검색 시작] 키워드: {keywords}")
 
-    query_body = {
-        "size": 3,  # 원하는 결과 수
-        "query": {
+    must_clauses = [
+        {
             "multi_match": {
-                "query": combined_query,
-                "fields": ["title^2", "sub_category^1.5", "question", "answer"],
+                "query": kw,
+                "fields": [
+                    "title^2",
+                    "sub_category^1.5",
+                    "question",
+                    "answer",
+                ],
                 "type": "most_fields",
                 "operator": "or",
             }
-        },
-        "_source": ["title", "question", "answer"],  # 💡 필요 필드만 가져오기
+        }
+        for kw in keywords
+    ]
+
+    query_body = {
+        "size": 3,  # 🔒 고정된 갯수로 제한
+        "query": {"bool": {"must": must_clauses}},
     }
 
     try:
@@ -402,9 +411,11 @@ async def async_ES_search(keywords):
         hits = response["hits"]["hits"]
 
         if not hits:
+            # print("⚠️ [ES 검색 결과 없음]")
             return []
 
-        return [
+        # ✅ LLM 입력용 간결한 구조
+        results = [
             {
                 "title": hit["_source"].get("title", ""),
                 "question": hit["_source"].get("question", ""),
@@ -416,27 +427,41 @@ async def async_ES_search(keywords):
             and hit["_source"].get("answer")
         ]
 
+        # print(f"✅ [ES 결과 {len(results)}건 확보 완료]")
+        return results
+
     except Exception as e:
+        # print(f"❌ [ES 검색 오류]: {e}")
         return []
 # --------------------------------------------------------------------------------
 
 async def async_ES_search_one(keywords):
-    """Elasticsearch 기반 상담 검색 (최적화 버전, OR 조건 기반, 하이라이트 제거)"""
+    """Elasticsearch 기반 상담 검색 (LLM 입력 최적화: 50글자 제한)"""
     index_name = "es_legal_consultation"
 
-    # 🔧 모든 키워드를 하나로 합쳐서 쿼리 효율화
-    combined_query = " ".join(keywords)
+    # print(f"✅ [search_keywords 확인]: {keywords}")
+    # print(f"🔍 [ES 검색 시작] 키워드: {keywords}")
 
-    query_body = {
-        "size": 1,
-        "query": {
+    must_clauses = [
+        {
             "multi_match": {
-                "query": combined_query,
-                "fields": ["title^2", "sub_category^1.5", "question", "answer"],
+                "query": kw,
+                "fields": [
+                    "title^2",
+                    "sub_category^1.5",
+                    "question",
+                    "answer",
+                ],
                 "type": "most_fields",
                 "operator": "or",
             }
-        },
+        }
+        for kw in keywords
+    ]
+
+    query_body = {
+        "size": 1,  # 🔒 고정된 결과 수
+        "query": {"bool": {"must": must_clauses}},
     }
 
     try:
@@ -445,24 +470,34 @@ async def async_ES_search_one(keywords):
         max_score = response["hits"].get("max_score", 0.0)
 
         if not hits:
-            return {"max_score": 0.0, "hits": []}
+            # print("⚠️ [ES 검색 결과 없음]")
+            return {
+                "max_score": 0.0,
+                "hits": [],
+            }
 
-        hit = hits[0]
-        src = hit["_source"]
-        return {
-            "max_score": max_score,
-            "hits": [
-                {
-                    "title": src.get("title", ""),
-                    "question": src.get("question", "")[:50],
-                    "answer": src.get("answer", "")[:50],
-                }
-            ],
-        }
+        results = []
+        for hit in hits:
+            src = hit["_source"]
+            title = src.get("title", "")
+            question = src.get("question", "")[:50]
+            answer = src.get("answer", "")[:50]
+
+            if title and question and answer:
+                results.append(
+                    {
+                        "title": title,
+                        "question": question,
+                        "answer": answer,
+                    }
+                )
+
+        # print(f"✅ [ES 결과 {len(results)}건 확보 완료] (max_score={max_score})")
+        return {"max_score": max_score, "hits": results}
 
     except Exception as e:
+        # print(f"❌ [ES 검색 오류]: {e}")
         return {"max_score": 0.0, "hits": []}
-
 
 # ------------------------------------------------------------------------------
 
@@ -532,4 +567,3 @@ async def async_ES_search_updater(keywords, fragment_size=100):
 
     except Exception as e:
         return {"max_score": 0.0, "hits": []}
-
