@@ -27,33 +27,28 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DB_FAISS_PATH = "./app/chatbot_term/vectorstore"
 
 app = FastAPI()
-faiss_db = None
+
 router = APIRouter()
 yes_count_memory = {}  # 간단한 글로벌 YES 메모리 (세션/유저 구분 가능시 확장)
 
 
-# --- startup 이벤트에서 FAISS 한 번만 로드
-@app.on_event("startup")
-async def startup_event():
-    global faiss_db
+def load_faiss():
     try:
         embedding_model = OpenAIEmbeddings(
             model="text-embedding-ada-002",
             openai_api_key=OPENAI_API_KEY,
         )
-        faiss_db = FAISS.load_local(
+        return FAISS.load_local(
             DB_FAISS_PATH,
             embedding_model,
             allow_dangerous_deserialization=True,
         )
-        print("✅ FAISS 전역 로딩 완료")
     except Exception as e:
-        print(f"❌ FAISS 로딩 실패: {e}")
-        faiss_db = None
-
-
+        # print(f"❌ FAISS 로드 실패: {e}")
+        return None
 class QueryRequest(BaseModel):
     query: str
+
 
 @router.post("/initial")
 async def chatbot_initial_stream(request: QueryRequest):
@@ -65,6 +60,7 @@ async def chatbot_initial_stream(request: QueryRequest):
         try:
             yield "data: 로딩 중...\n\n"
 
+            faiss_db = load_faiss()
             if not faiss_db:
                 yield 'data: {"error": "FAISS 로드 실패"}\n\n'
                 return
@@ -106,6 +102,7 @@ async def chatbot_initial_stream(request: QueryRequest):
 @router.post("/prepare")
 async def chatbot_prepare(request: QueryRequest):
     user_query = request.query.strip()
+    faiss_db = load_faiss()
     if not faiss_db:
         raise HTTPException(status_code=500, detail="FAISS 로드 실패")
 
@@ -128,6 +125,7 @@ async def chatbot_prepare(request: QueryRequest):
 @router.post("/advanced")
 async def chatbot_advanced(request: QueryRequest):
     user_query = request.query.strip()
+    faiss_db = load_faiss()
     if not faiss_db:
         raise HTTPException(status_code=500, detail="FAISS 로드 실패")
 
