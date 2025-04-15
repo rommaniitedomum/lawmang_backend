@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from app.chatbot.tool_agents.tools import async_search_consultation
 from app.chatbot.tool_agents.utils.utils import validate_model_type
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+OPENAI_API_KEY2 = os.environ.get("OPENAI_API_KEY2")
 
 
 def build_relevance_prompt(user_query: str, consultation_results: List[Dict]) -> str:
@@ -45,7 +45,7 @@ async def check_relevance_to_consultations(
 
     llm = ChatOpenAI(
         model=model,
-        api_key=OPENAI_API_KEY,
+        api_key=OPENAI_API_KEY2,
         temperature=0.0,
         streaming=False,
     )
@@ -139,7 +139,7 @@ async def choose_best_consultation(
 
     llm = ChatOpenAI(
         model=model,
-        api_key=OPENAI_API_KEY,
+        api_key=OPENAI_API_KEY2,
         temperature=0.1,
         streaming=False,
     )
