@@ -22,15 +22,7 @@ async def run_initial_controller(
             stop_event=stop_event,
         )
     )
-    # ask_human_task = asyncio.create_task(
-    #     ask_human_agent.ask_human(
-    #         user_query=user_query,
-    #         llm1_answer=None,
-    #         current_yes_count=current_yes_count,
-    #         template_data=None,
-    #         initial_response=None,
-    #     )
-    # )
+
 
     # ✅ LLM1 먼저 기다림
     initial_result = await chatbot_task
