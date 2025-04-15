@@ -21,44 +21,30 @@ def get_prompt_by_score(
         return f"""
 [사용자 질문]
 {user_query}
-
 [요약]
 {summary_with_links}
-
 [설명]
 {explanation_with_links}
-
-[링크1]
-{hyperlinks_text}
-
 [전략 요약]
 {strategy.get("final_strategy_summary", "")}
-
 [응답 구성 전략]
 - 말투: {strategy.get("tone", "")}
 - 흐름: {strategy.get("structure", "")}
 - 조건 흐름도:
 {strategy_decision_tree}
-
-[링크2]
-{json.dumps(strategy.get("recommended_links", []), ensure_ascii=False)}
-
 [추가된 판례 요약]
 - {precedent_summary}
 - 정보: {precedent_meta}
 - 링크: {precedent_link}
 💡 제공된 답중에는 오답이 섞여 있습니다 천천히 생각해보고 사용자 입장에서 올바른 답변을 해보세요.
 💡 위 내용을 반영하여, 사용자가 신뢰할 수 있는 법률 상담을 생성하세요.
-🧠 이 프롬프트는 고신뢰도 전략 템플릿을 기반으로 구성되었습니다.
 LLM2가 구성한 판례/전략/설명을 충분히 반영하여, 구조적이고 논리적인 전문 법률 답변을 생성해 주세요.
-💡 내부 링크는 노출시키지 말고 여기에는 이런게 있다고 설명하세요 
 📌 다음 구성 요소들을 반드시 포함해야 합니다:
 
 ----------------------------
 [결론 및 권고]
 - 사건의 법적 평가 요약
 - 대응 방안 및 권고
-
 
 🔲 ✅ 법률 판단 및 논리 전개
 - 관련 법령 설명
