@@ -14,8 +14,6 @@
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=githubactions&logoColor=white&style=flat)
 [![OpenAI API](https://img.shields.io/badge/OpenAI%20API-GPT--3.5turbo-brightgreen.svg?logo=OpenAI&logoColor=white)](https://openai.com/)
 
-
-
 # Lawmang 프로젝트
 
 ## 목차
@@ -41,20 +39,24 @@
 ## 📄 주요 서비스
 
 ### 1️ 법률 상담 챗봇 (Legal Chatbot)
+
 - 사용자의 질문을 분석하여 즉각적이고 정확한 법률상담 제공
 - 법률 사례 및 판례 검색을 통한 상세한 법률 정보 제공
 - Elasticsearch, PostgreSQL, FAISS 기반 검색 엔진 활용으로 높은 정확도 보장
 
 ### 2️⃣ 법률 용어 검색 서비스 (Legal Terms Search)
+
 - 법률 전문 용어에 대한 정의와 설명 제공
 - 빠르고 정확한 벡터 기반 검색을 통해 관련된 법률 용어를 쉽게 검색 가능
 
 ### 3️⃣ 딥 리서치 서비스 (Deep Research)
+
 - 특정 법률 이슈에 대해 웹 기반의 심층 리서치 수행
 - Firecrawl, Tavily API를 활용한 최신 법률 정보 및 자료 수집
 - 수집된 자료를 바탕으로 요약 보고서 및 세부 리포트 생성
 
 ### 4️⃣ 사용자 개인화 서비스 (Personalization)
+
 - 상담 기록 및 법률 상담 이력 관리
 - 메모 작성 및 개인 기록 관리 기능 제공
 - 사용자 맞춤형 콘텐츠 제공 (최근 조회한 상담, 개인 히스토리 등)
@@ -99,21 +101,21 @@ app/
 
 ### 데이터베이스 연결
 
-- **PostgreSQL**: 법률 상담 기록 및 사용자 정보 관리  
-- **Elasticsearch**: 효율적이고 빠른 검색 지원 (법률상담 데이터)  
-- **FAISS**: 법률 용어 벡터 검색 지원  
+- **PostgreSQL**: 법률 상담 기록 및 사용자 정보 관리
+- **Elasticsearch**: 효율적이고 빠른 검색 지원 (법률상담 데이터)
+- **FAISS**: 법률 용어 벡터 검색 지원
 
 ## 📄 구성 파일
 
-| 기능                 | 설명                           | 주요 파일 |
-|----------------------|--------------------------------|-----------|
-| API 라우팅            | 전체 서비스 API 라우팅 관리    | `routes/*.py` |
-| 데이터 관리           | 데이터 스키마 및 모델 정의 관리 | `models/*.py`, `schemas/*.py` |
-| 비즈니스 로직 관리     | 상담, 메모, 사용자 등 로직 관리 | `services/*.py` |
-| 핵심 시스템 관리       | 데이터베이스 및 설정 관리      | `core/*.py` |
-| 챗봇 시스템 관리       | 상담 챗봇 및 관련 로직 관리    | `chatbot/*.py`, `chatbot/tool_agents/*.py` |
-| 법률 용어 검색 서비스  | 법률 용어 벡터 검색 관리       | `chatbot_term/*.py` |
-| 딥 리서치 관리         | 심층 웹 리서치 관리            | `deepresearch/*.py` |
+| 기능                  | 설명                            | 주요 파일                                  |
+| --------------------- | ------------------------------- | ------------------------------------------ |
+| API 라우팅            | 전체 서비스 API 라우팅 관리     | `routes/*.py`                              |
+| 데이터 관리           | 데이터 스키마 및 모델 정의 관리 | `models/*.py`, `schemas/*.py`              |
+| 비즈니스 로직 관리    | 상담, 메모, 사용자 등 로직 관리 | `services/*.py`                            |
+| 핵심 시스템 관리      | 데이터베이스 및 설정 관리       | `core/*.py`                                |
+| 챗봇 시스템 관리      | 상담 챗봇 및 관련 로직 관리     | `chatbot/*.py`, `chatbot/tool_agents/*.py` |
+| 법률 용어 검색 서비스 | 법률 용어 벡터 검색 관리        | `chatbot_term/*.py`                        |
+| 딥 리서치 관리        | 심층 웹 리서치 관리             | `deepresearch/*.py`                        |
 
 ## 💻 개발환경설정
 
@@ -135,21 +137,27 @@ uvicorn app.main:app --reload
 localhost:8000
 ```
 
-## 📚개발 플로우 
+## 📚개발 플로우
 
-# 이따가 추가 
+![플로우설명](image-4.png)
 
+## 📚히스토리
 
-## 🦜 랭체인
+![히스토리](image-2.png)
 
-## RAG 체인 구현
+# 플로우 차트 히스토리
+
+![플로우 히스토리](image-3.png)
+
+# 사용도구/추후 계획
+
+![도구 계획](image-5.png)
 
 ## 📃 자료
 
 - [PPT자료]()
 - [erd클라우드]()
 - [(개인 보고서)시스템 목적 및 기술적 구현.docx]()
-
 
 ## 📞 연락처
 
@@ -158,6 +166,5 @@ localhost:8000
 - **이메일**: [support@lawmang.com](mailto:support@lawmang.com)
 - **웹사이트**: [https://lawmang.com](https://lawmang.com)
 - **카카오톡**: Lawmang 카카오톡 플러스친구 (준비중)
-
 
 [Back to top](#top)
