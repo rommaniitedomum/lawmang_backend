@@ -14,13 +14,13 @@ from app.chatbot.tool_agents.utils.utils import (
 from app.chatbot.tool_agents.tools import async_ES_search_one
 
 load_dotenv()
-OPENAI_API_KEY2 = os.getenv("OPENAI_API_KEY2")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def load_llm():
     return ChatOpenAI(
         model="gpt-3.5-turbo",
-        api_key=OPENAI_API_KEY2,
+        api_key=OPENAI_API_KEY,
         temperature=0.1,
         max_tokens=1024,
         streaming=False,

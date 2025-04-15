@@ -54,7 +54,7 @@ async def run_initial_controller(
                 template_data=None,
                 initial_response=None,
             ),
-            timeout=8.0,  # 혹시 오래 걸릴 경우 방지
+            timeout=12.0,  # 혹시 오래 걸릴 경우 방지
         )
         # print("✅ [controller] ask_human 반환 성공:", ask_result)
     except asyncio.TimeoutError:

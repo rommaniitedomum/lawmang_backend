@@ -288,86 +288,6 @@ async def update_llm2_template_with_es(template_data: Dict, user_query: str) -> 
     )
 
 
-async def evalandsave_llm2_template_with_es(
-    template_data: Dict, user_query: str
-) -> None:
-    template = template_data.get("template", {}) or {}
-    strategy = template_data.get("strategy", {}) or {}
-    precedent = template_data.get("precedent", {}) or {}
-
-    async def get_snippet_and_score(texts, fragment_size=20):
-        es_result = await async_ES_search_updater(texts, fragment_size=fragment_size)
-        hits = es_result.get("hits", [])
-        max_score = es_result.get("max_score", 0)
-
-        if hits:
-            snippet = hits[0].get("answer_snippet", "") or hits[0].get(
-                "question_snippet", ""
-            )
-            clean_snippet = re.sub(r"</?em>", "", snippet)
-        else:
-            clean_snippet = "기본"
-
-        return clean_snippet, max_score
-
-    # ✅ 병렬 실행
-    tasks = await asyncio.gather(
-        get_snippet_and_score([user_query, template.get("summary", "")]),
-        get_snippet_and_score(
-            [
-                template.get("explanation", ""),
-                strategy.get("final_strategy_summary", ""),
-            ]
-        ),
-        get_snippet_and_score([template.get("ref_question", "")]),
-        get_snippet_and_score(
-            [
-                strategy.get("final_strategy_summary", ""),
-                " ".join(strategy.get("decision_tree", [])),
-            ]
-        ),
-        get_snippet_and_score(
-            [precedent.get("summary", ""), precedent.get("title", "")]
-        ),
-    )
-
-    # ✅ 결과 할당
-    (summary_snippet, summary_score) = tasks[0]
-    (explanation_snippet, explanation_score) = tasks[1]
-    (ref_question_snippet, ref_score) = tasks[2]
-    (precedent_snippet, _) = tasks[4]
-
-    # ✅ 업데이트
-    template["summary_raw"] = template.get("summary", "")
-    template["summary"] = f"updated.summary.from.es: {summary_snippet[:50]}"
-    template["summary_score"] = summary_score
-
-    template["explanation_raw"] = template.get("explanation", "")
-    template["explanation"] = f"updated.explanation.from.es: {explanation_snippet[:50]}"
-    template["explanation_score"] = explanation_score
-
-    template["ref_question_raw"] = template.get("ref_question", "")
-    template["ref_question"] = (
-        f"updated.ref_question.from.es: {ref_question_snippet[:50]}"
-    )
-    template["ref_question_score"] = ref_score
-
-    precedent["summary"] = f"updated.precedent.from.es: {precedent_snippet[:50]}"
-    prec_keywords = faiss_kiwi.extract_keywords(precedent_snippet, top_k=3)
-    precedent["title"] = f"{prec_keywords[0]} 관련 증강 판례"
-
-    store_template_in_memory(
-        {
-            "built": True,
-            "built_by_llm2": True,
-            "updated_by_es": True,
-            "template": template,
-            "strategy": strategy,
-            "precedent": precedent,
-        }
-    )
-
-
 # async def evalandsave_llm2_template_with_es(
 #     template_data: Dict, user_query: str
 # ) -> None:
@@ -375,73 +295,67 @@ async def evalandsave_llm2_template_with_es(
 #     strategy = template_data.get("strategy", {}) or {}
 #     precedent = template_data.get("precedent", {}) or {}
 
-#     async def get_keywords_and_score(texts, top_k=10):
-#         es_result = await async_ES_search_one(texts)
+#     async def get_snippet_and_score(texts, fragment_size=20):
+#         es_result = await async_ES_search_updater(texts, fragment_size=fragment_size)
 #         hits = es_result.get("hits", [])
 #         max_score = es_result.get("max_score", 0)
-#         return extract_top_keywords(hits, top_k=top_k) or ["기본"], max_score
 
-#     # ✅ 모든 검색 프리패치 → 병렬 실행
+#         if hits:
+#             snippet = hits[0].get("answer_snippet", "") or hits[0].get(
+#                 "question_snippet", ""
+#             )
+#             clean_snippet = re.sub(r"</?em>", "", snippet)
+#         else:
+#             clean_snippet = "기본"
+
+#         return clean_snippet, max_score
+
+#     # ✅ 병렬 실행
 #     tasks = await asyncio.gather(
-#         get_keywords_and_score([user_query, template.get("summary", "")]),  # 1
-#         get_keywords_and_score(
+#         get_snippet_and_score([user_query, template.get("summary", "")]),
+#         get_snippet_and_score(
 #             [
 #                 template.get("explanation", ""),
 #                 strategy.get("final_strategy_summary", ""),
 #             ]
-#         ),  # 2
-#         get_keywords_and_score([template.get("ref_question", "")]),  # 3
-#         get_keywords_and_score(
+#         ),
+#         get_snippet_and_score([template.get("ref_question", "")]),
+#         get_snippet_and_score(
 #             [
 #                 strategy.get("final_strategy_summary", ""),
 #                 " ".join(strategy.get("decision_tree", [])),
 #             ]
-#         ),  # 4
-#         get_keywords_and_score(
+#         ),
+#         get_snippet_and_score(
 #             [precedent.get("summary", ""), precedent.get("title", "")]
-#         ),  # 5
+#         ),
 #     )
 
 #     # ✅ 결과 할당
-#     (summary_keywords, summary_score) = tasks[0]
-#     (explanation_keywords, explanation_score) = tasks[1]
-#     (ref_keywords, ref_score) = tasks[2]
-#     (strat_keywords, _) = tasks[3]
-#     (prec_keywords, _) = tasks[4]
+#     (summary_snippet, summary_score) = tasks[0]
+#     (explanation_snippet, explanation_score) = tasks[1]
+#     (ref_question_snippet, ref_score) = tasks[2]
+#     (precedent_snippet, _) = tasks[4]
 
-#     # ✅ Summary
+#     # ✅ 업데이트
 #     template["summary_raw"] = template.get("summary", "")
-#     template["summary"] = "updated.summary.from.es: " + ", ".join(summary_keywords)
+#     template["summary"] = f"updated.summary.from.es: {summary_snippet[:50]}"
 #     template["summary_score"] = summary_score
 
-#     # ✅ Explanation
 #     template["explanation_raw"] = template.get("explanation", "")
-#     template["explanation"] = "updated.explanation.from.es: " + ", ".join(
-#         explanation_keywords
-#     )
+#     template["explanation"] = f"updated.explanation.from.es: {explanation_snippet[:50]}"
 #     template["explanation_score"] = explanation_score
 
-#     # ✅ Ref question
 #     template["ref_question_raw"] = template.get("ref_question", "")
-#     template["ref_question"] = "updated.ref_question.from.es: " + ", ".join(
-#         ref_keywords
+#     template["ref_question"] = (
+#         f"updated.ref_question.from.es: {ref_question_snippet[:50]}"
 #     )
 #     template["ref_question_score"] = ref_score
 
-#     # ✅ Strategy
-#     strategy["final_strategy_summary"] = "updated.strategy.from.es: " + ", ".join(
-#         strat_keywords
-#     )
-#     strategy["decision_tree"] = [
-#         f"사용자가 '{kw}' 관련 질문을 하면 법적 요건을 중심으로 판단"
-#         for kw in strat_keywords
-#     ]
-
-#     # ✅ Precedent
-#     precedent["summary"] = "updated.precedent.from.es: " + ", ".join(prec_keywords)
+#     precedent["summary"] = f"updated.precedent.from.es: {precedent_snippet[:50]}"
+#     prec_keywords = faiss_kiwi.extract_keywords(precedent_snippet, top_k=3)
 #     precedent["title"] = f"{prec_keywords[0]} 관련 증강 판례"
 
-#     # ✅ 캐시 저장
 #     store_template_in_memory(
 #         {
 #             "built": True,
@@ -452,6 +366,187 @@ async def evalandsave_llm2_template_with_es(
 #             "precedent": precedent,
 #         }
 #     )
+    
+# async def evalandsave_llm2_template_with_es(
+#     template_data: Dict, user_query: str
+# ) -> None:
+#     template = template_data.get("template", {}) or {}
+#     strategy = template_data.get("strategy", {}) or {}
+#     precedent = template_data.get("precedent", {}) or {}
+
+#     async def get_snippet_and_score(texts, fragment_size=20):
+#         es_result = await async_ES_search_updater(texts, fragment_size=fragment_size)
+#         hits = es_result.get("hits", [])
+#         max_score = es_result.get("max_score", 0)
+
+#         if hits:
+#             snippet = hits[0].get("answer_snippet", "") or hits[0].get(
+#                 "question_snippet", ""
+#             )
+#             clean_snippet = re.sub(r"</?em>", "", snippet)
+#         else:
+#             clean_snippet = "기본"
+
+#         return clean_snippet, max_score
+
+#     # ✅ 병렬 실행
+#     tasks = await asyncio.gather(
+#         get_snippet_and_score([user_query, template.get("summary", "")]),  # 0
+#         get_snippet_and_score(
+#             [
+#                 template.get("explanation", ""),
+#                 strategy.get("final_strategy_summary", ""),
+#             ]
+#         ),  # 1
+#         get_snippet_and_score([template.get("ref_question", "")]),  # 2
+#         get_snippet_and_score(
+#             [
+#                 strategy.get("final_strategy_summary", ""),
+#                 " ".join(strategy.get("decision_tree", [])),
+#             ]
+#         ),  # 3 (decision_tree_snippet)
+#         get_snippet_and_score(
+#             [precedent.get("summary", ""), precedent.get("title", "")]
+#         ),  # 4
+#         get_snippet_and_score(
+#             [strategy.get("tone", ""), strategy.get("structure", "")]
+#         ),  # 5 (tone_structure_snippet)
+#     )
+
+#     # ✅ 결과 할당
+#     (summary_snippet, summary_score) = tasks[0]
+#     (explanation_snippet, explanation_score) = tasks[1]
+#     (ref_question_snippet, ref_score) = tasks[2]
+#     (decision_tree_snippet, _) = tasks[3]
+#     (precedent_snippet, _) = tasks[4]
+#     (tone_structure_snippet, _) = tasks[5]
+
+#     # ✅ 템플릿 업데이트
+#     template["summary"] = f"updated.summary.from.es: {summary_snippet[:50]}"
+#     template["summary_score"] = summary_score
+
+#     template["explanation"] = f"updated.explanation.from.es: {explanation_snippet[:50]}"
+#     template["explanation_score"] = explanation_score
+
+#     template["ref_question"] = (
+#         f"updated.ref_question.from.es: {ref_question_snippet[:50]}"
+#     )
+#     template["ref_question_score"] = ref_score
+
+#     # ✅ 전략 업데이트
+#     strategy["final_strategy_summary"] = (
+#         f"updated.strategy.from.es: {explanation_snippet[:50]}"
+#     )
+#     strategy["decision_tree_snippet"] = decision_tree_snippet[:50]
+#     strategy["tone_structure_snippet"] = tone_structure_snippet[:50]
+
+#     # ✅ 판례 업데이트
+#     precedent["summary"] = f"updated.precedent.from.es: {precedent_snippet[:50]}"
+#     prec_keywords = faiss_kiwi.extract_keywords(precedent_snippet, top_k=3)
+#     if prec_keywords:
+#         precedent["title"] = f"{prec_keywords[0]} 관련 증강 판례"
+
+#     # ✅ 메모리 저장
+#     store_template_in_memory(
+#         {
+#             "built": True,
+#             "built_by_llm2": True,
+#             "updated_by_es": True,
+#             "template": template,
+#             "strategy": strategy,
+#             "precedent": precedent,
+#         }
+#     )
+
+async def evalandsave_llm2_template_with_es(
+    template_data: Dict, user_query: str
+) -> None:
+    template = template_data.get("template", {}) or {}
+    strategy = template_data.get("strategy", {}) or {}
+    precedent = template_data.get("precedent", {}) or {}
+
+    async def get_field_snippet(query_texts, target_field, fragment_size=50):
+        es_result = await async_ES_search_updater(
+            query_texts, fragment_size=fragment_size
+        )
+        hits = es_result.get("hits", [])
+        max_score = es_result.get("max_score", 0)
+
+        if hits:
+            hit = hits[0]
+            snippet = hit.get(f"{target_field}_snippet", "")
+            clean_snippet = re.sub(r"</?em>", "", snippet)
+        else:
+            clean_snippet = "기본"
+
+        return clean_snippet[:50], max_score
+
+    tasks = await asyncio.gather(
+        # 필드와 ES 필드를 명확히 매핑
+        get_field_snippet(
+            [user_query, template.get("summary", "")], "answer"
+        ),  # summary
+        get_field_snippet(
+            [
+                template.get("explanation", ""),
+                strategy.get("final_strategy_summary", ""),
+            ],
+            "answer",
+        ),  # explanation
+        get_field_snippet(
+            [template.get("ref_question", "")], "question"
+        ),  # ref_question
+        get_field_snippet(
+            [
+                strategy.get("final_strategy_summary", ""),
+                " ".join(strategy.get("decision_tree", [])),
+            ],
+            "answer",
+        ),  # final_strategy_summary
+        get_field_snippet(
+            [precedent.get("summary", ""), precedent.get("title", "")], "answer"
+        ),  # precedent.summary
+        get_field_snippet([precedent.get("title", "")], "title"),  # precedent.title
+    )
+
+    # 결과 필드 할당 (명확한 대응 관계 유지)
+    (summary_snippet, summary_score) = tasks[0]
+    (explanation_snippet, explanation_score) = tasks[1]
+    (ref_question_snippet, ref_score) = tasks[2]
+    (strategy_summary_snippet, _) = tasks[3]
+    (precedent_summary_snippet, _) = tasks[4]
+    (precedent_title_snippet, _) = tasks[5]
+
+    # 템플릿 업데이트
+    template["summary"] = f"updated.summary.from.es: {summary_snippet}"
+    template["summary_score"] = summary_score
+
+    template["explanation"] = f"updated.explanation.from.es: {explanation_snippet}"
+    template["explanation_score"] = explanation_score
+
+    template["ref_question"] = f"updated.ref_question.from.es: {ref_question_snippet}"
+    template["ref_question_score"] = ref_score
+
+    # 전략 업데이트
+    strategy["final_strategy_summary"] = (
+        f"updated.strategy.from.es: {strategy_summary_snippet}"
+    )
+
+    # 판례 업데이트
+    precedent["summary"] = f"updated.precedent.from.es: {precedent_summary_snippet}"
+    precedent["title"] = f"{precedent_title_snippet[:50]}"
+
+    # 메모리에 저장
+    store_template_in_memory(
+        {
+            "built": True,
+            "built_by_llm2": True,
+            "updated_by_es": True,
+            "template": template,
+            "strategy": strategy,
+            "precedent": precedent,
+        }
+    )
 
 
 def calculate_llm2_accuracy_score(template_score: float, user_score: float) -> int:

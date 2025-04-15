@@ -8,7 +8,7 @@ from app.chatbot.tool_agents.tools import LawGoKRTavilySearch
 from app.chatbot.memory.templates import get_default_strategy_template
 from app.chatbot.tool_agents.utils.utils import validate_model_type
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+OPENAI_API_KEY2 = os.environ.get("OPENAI_API_KEY2")
 
 
 def get_llm(model: str, temperature: float = 0.3) -> ChatOpenAI:
@@ -16,7 +16,7 @@ def get_llm(model: str, temperature: float = 0.3) -> ChatOpenAI:
 
     return ChatOpenAI(
         model=model,
-        api_key=OPENAI_API_KEY,
+        api_key=OPENAI_API_KEY2,
         temperature=temperature,
         streaming=False,
     )

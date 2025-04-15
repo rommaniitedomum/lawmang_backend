@@ -24,7 +24,11 @@ def load_llm():
         model="gpt-3.5-turbo",
         api_key=OPENAI_API_KEY,
         temperature=0.3,
-        max_tokens=2048,
+        max_tokens=1024,
+        request_timeout=15,
+        top_p=0.9,
+        frequency_penalty=0,
+        presence_penalty=0,
     )
 
 
@@ -173,8 +177,8 @@ class AskHumanAgent:
 
         # ✅ 4. fallback 판단 기준
         fallback_threshold = 15
-        if 0 < accuracy < 50:
-            fallback_threshold = int(15 + (50 - accuracy) * 0.5)
+        if 0 < accuracy < 30:
+            fallback_threshold = int(10 + (30 - accuracy) * 0.3)
 
         if not evaluating_now and (
             (llm1_answer and "###no" in llm1_answer.lower())
