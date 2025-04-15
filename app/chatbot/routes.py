@@ -17,6 +17,7 @@ from fastapi import FastAPI
 
 # ✅ 락: 중복 실행 방지 (LLM2 관련)
 llm2_lock = Lock()
+prepare_lock = Lock()
 yes_count = 0
 sys.path.append(os.path.abspath("."))
 load_dotenv()
@@ -87,24 +88,24 @@ async def chatbot_initial(request: QueryRequest):
 # ✅ 2. LLM2 빌드 전용: 전략/판례 캐싱만 수행
 @router.post("/prepare")
 async def chatbot_prepare(request: QueryRequest):
-    user_query = request.query.strip()
-    faiss_db = load_faiss()
-    if not faiss_db:
-        raise HTTPException(status_code=500, detail="FAISS 로드 실패")
+    async with prepare_lock:
+        user_query = request.query.strip()
+        faiss_db = load_faiss()
+        if not faiss_db:
+            raise HTTPException(status_code=500, detail="FAISS 로드 실패")
 
-    keywords = faiss_kiwi.extract_top_keywords_faiss(user_query, faiss_db)
-    stop_event = asyncio.Event()
+        keywords = faiss_kiwi.extract_top_keywords_faiss(user_query, faiss_db)
+        stop_event = asyncio.Event()
 
-    # 전략 + 판례만 생성 (GPT 호출 없이)
-    await run_full_consultation(
-        user_query=user_query,
-        search_keywords=keywords,
-        model="gpt-4",
-        build_only=True,
-        stop_event=stop_event,
-    )
+        await run_full_consultation(
+            user_query=user_query,
+            search_keywords=keywords,
+            model="gpt-4",
+            build_only=True,
+            stop_event=stop_event,
+        )
 
-    return {"status": "ok", "message": "백그라운드 빌드 완료"}
+        return {"status": "ok", "message": "백그라운드 빌드 완료"}
 
 
 # ✅ 3. LLM2 최종 응답: 고급 GPT 실행

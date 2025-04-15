@@ -17,13 +17,13 @@ from app.chatbot.memory.global_cache import (
 )
 from app.chatbot.initial_agents.prompt_tone_selector import get_prompt_by_score
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY2 = os.getenv("OPENAI_API_KEY2")
 
 
 def load_llm():
     return ChatOpenAI(
         model="gpt-3.5-turbo",
-        api_key=OPENAI_API_KEY,
+        api_key=OPENAI_API_KEY2,
         temperature=0.3,
         max_tokens=2048,
     )
