@@ -10,7 +10,6 @@ from app.chatbot.tool_agents.utils.utils import (
     evalandsave_llm2_template_with_es,
     calculate_llm2_accuracy_score,
 )
-from app.chatbot.memory.global_cache import memory  # ConversationBufferMemory 인스턴스
 # 글로벌 캐시 기능: 템플릿을 시스템 메시지로 저장하고 조회하는 함수들
 from app.chatbot.memory.global_cache import (
     retrieve_template_from_memory,store_template_in_memory
