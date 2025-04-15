@@ -179,10 +179,14 @@ class AskHumanAgent:
         fallback_threshold = 15
         if 0 < accuracy < 30:
             fallback_threshold = int(10 + (30 - accuracy) * 0.3)
-
+            
+        # ✅ 6. YES 감지 및 누적
+        yes_count_detected = 1 if llm1_answer and "###yes" in llm1_answer.lower() else 0
+        total_yes_count = current_yes_count + yes_count_detected
+        
         if not evaluating_now and (
-            (llm1_answer and "###no" in llm1_answer.lower())
-            or (accuracy < 50 and max_score < fallback_threshold)
+            (llm1_answer and "###no" in llm1_answer.lower()) or
+            (yes_count_detected == 0 and accuracy < 30 and max_score < fallback_threshold)
         ):
 
             return {
@@ -222,9 +226,7 @@ class AskHumanAgent:
                 "precedent": {},
             }
 
-        # ✅ 6. YES 감지 및 누적
-        yes_count_detected = 1 if llm1_answer and "###yes" in llm1_answer.lower() else 0
-        total_yes_count = current_yes_count + yes_count_detected
+
 
         # ✅ 7. 후속 질문 생성
         mcq_q = await self.generate_mcq_question(
