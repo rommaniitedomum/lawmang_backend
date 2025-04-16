@@ -69,12 +69,12 @@ async def chatbot_initial(request: QueryRequest):
         template_data=template_data,
         stop_event=stop_event,
     )
-
-    # ✅ 비동기 후처리: 템플릿 증강 (LLM2 템플릿이 있는 경우에만)
     cached_template = retrieve_template_from_memory()
     if cached_template and cached_template.get("built_by_llm2"):
-        asyncio.create_task(update_llm2_template_with_es(cached_template, user_query))
-
+        result["template"] = cached_template.get("template", {})
+        result["strategy"] = cached_template.get("strategy", {})
+        result["precedent"] = cached_template.get("precedent", {})
+        
     return {
         "mcq_question": result.get("mcq_question") or "⚠️ fallback 응답이 없습니다.",
         "yes_count": result.get("yes_count", 0),
