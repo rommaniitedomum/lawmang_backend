@@ -466,11 +466,11 @@ async def evalandsave_llm2_template_with_es(
     precedent = template_data.get("precedent", {}) or {}
 
     async def get_field_snippet(query_texts, target_field, fragment_size=50):
-        es_result = await async_ES_search_updater(query_texts, fragment_size=fragment_size)
-
-        hits_block = es_result.get("hits", {})
-        hits = hits_block.get("hits", [])
-        max_score = hits_block.get("max_score", 0)
+        es_result = await async_ES_search_updater(
+            query_texts, fragment_size=fragment_size
+        )
+        hits = es_result.get("hits", [])
+        max_score = es_result.get("max_score", 0)
 
         if hits:
             hit = hits[0]
