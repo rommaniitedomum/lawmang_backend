@@ -21,10 +21,6 @@ def get_prompt_by_score(
         return f"""
 [사용자 질문]
 {user_query}
-[요약]
-{summary_with_links}
-[설명]
-{explanation_with_links}
 [전략 요약]
 {strategy.get("final_strategy_summary", "")}
 [응답 구성 전략]
@@ -32,11 +28,15 @@ def get_prompt_by_score(
 - 흐름: {strategy.get("structure", "")}
 - 조건 흐름도:
 {strategy_decision_tree}
+- 정보: {precedent_meta}
 [추가된 판례 요약]
 - {precedent_summary}
-- 정보: {precedent_meta}
 
 
+[요약]
+{summary_with_links}
+[설명]
+{explanation_with_links}
 [링크1]
 {hyperlinks_text}
 💡 제공된 답중에는 오답이 섞여 있습니다 천천히 생각해보고 사용자 입장에서 올바른 답변을 해보세요.
