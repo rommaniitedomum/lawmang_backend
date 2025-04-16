@@ -11,14 +11,11 @@ from app.chatbot.tool_agents.utils.utils import (
     calculate_llm2_accuracy_score,
 )
 from app.chatbot.memory.global_cache import memory  # ConversationBufferMemory 인스턴스
-
 # 글로벌 캐시 기능: 템플릿을 시스템 메시지로 저장하고 조회하는 함수들
 from app.chatbot.memory.global_cache import (
-    retrieve_template_from_memory,
-    store_template_in_memory,
+    retrieve_template_from_memory,store_template_in_memory
 )
 from app.chatbot.initial_agents.prompt_tone_selector import get_prompt_by_score
-
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -58,8 +55,7 @@ class AskHumanAgent:
             template.get("explanation", ""), template.get("hyperlinks", [])
         )
         hyperlinks_text = "\n".join(
-            f"- {link['label']}: {link['url']}"
-            for link in template.get("hyperlinks", [])
+            f"- {link['label']}: {link['url']}" for link in template.get("hyperlinks", [])
         )
         strategy_decision_tree = "\n".join(strategy.get("decision_tree", []))
         precedent_summary = precedent.get("summary", "판례 요약 없음")
@@ -103,7 +99,8 @@ class AskHumanAgent:
         )
         response = await self.llm.ainvoke(prompt)
         return response.content.strip()
-
+    
+    
     async def ask_human(
         self,
         user_query,
@@ -145,6 +142,7 @@ class AskHumanAgent:
         else:
             accuracy = 0
 
+
         # ✅ 4. fallback 판단 기준
         fallback_threshold = 15
         if 0 < accuracy < 50:
@@ -154,6 +152,7 @@ class AskHumanAgent:
             (llm1_answer and "###no" in llm1_answer.lower())
             or (accuracy < 50 and max_score < fallback_threshold)
         ):
+
             return {
                 "yes_count": 0,
                 "mcq_question": (

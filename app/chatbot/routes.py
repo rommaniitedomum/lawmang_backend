@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import os
@@ -10,7 +11,7 @@ from langchain_community.vectorstores import FAISS
 from app.chatbot.tool_agents.executor.normalanswer import run_final_answer_generation
 from app.chatbot.initial_agents.controller import run_initial_controller
 from app.chatbot.tool_agents.controller import run_full_consultation
-from app.chatbot.tool_agents.utils.utils import faiss_kiwi, update_llm2_template_with_es
+from app.chatbot.tool_agents.utils.utils import faiss_kiwi,update_llm2_template_with_es
 from app.chatbot.memory.global_cache import retrieve_template_from_memory
 from fastapi import FastAPI
 
@@ -42,8 +43,6 @@ def load_faiss():
     except Exception as e:
         # print(f"❌ FAISS 로드 실패: {e}")
         return None
-
-
 class QueryRequest(BaseModel):
     query: str
 
@@ -68,15 +67,16 @@ async def chatbot_initial(request: QueryRequest):
         current_yes_count=0,
         template_data=template_data,
         stop_event=stop_event,
+        
     )
+
+    # ✅ 비동기 후처리: 템플릿 증강 (LLM2 템플릿이 있는 경우에만)
     cached_template = retrieve_template_from_memory()
     if cached_template and cached_template.get("built_by_llm2"):
-        result["template"] = cached_template.get("template", {})
-        result["strategy"] = cached_template.get("strategy", {})
-        result["precedent"] = cached_template.get("precedent", {})
-        
+        asyncio.create_task(update_llm2_template_with_es(cached_template, user_query))
+
     return {
-        "mcq_question": result.get("mcq_question") or "⚠️ fallback 응답이 없습니다.",
+        "mcq_question": result.get("mcq_question")or "⚠️ fallback 응답이 없습니다.",
         "yes_count": result.get("yes_count", 0),
         "is_mcq": result.get(
             "is_mcq", True
@@ -84,6 +84,7 @@ async def chatbot_initial(request: QueryRequest):
     }
 
 
+# ✅ 2. LLM2 빌드 전용: 전략/판례 캐싱만 수행
 @router.post("/prepare")
 async def chatbot_prepare(request: QueryRequest):
     user_query = request.query.strip()
@@ -94,18 +95,16 @@ async def chatbot_prepare(request: QueryRequest):
     keywords = faiss_kiwi.extract_top_keywords_faiss(user_query, faiss_db)
     stop_event = asyncio.Event()
 
-    # ✅ 백그라운드 작업으로 처리
-    asyncio.create_task(
-        run_full_consultation(
-            user_query=user_query,
-            search_keywords=keywords,
-            model="gpt-4",
-            build_only=True,
-            stop_event=stop_event,
-        )
+    # 전략 + 판례만 생성 (GPT 호출 없이)
+    await run_full_consultation(
+        user_query=user_query,
+        search_keywords=keywords,
+        model="gpt-4",
+        build_only=True,
+        stop_event=stop_event,
     )
 
-    return {"status": "ok", "message": "LLM2 빌드 백그라운드 시작됨"}
+    return {"status": "ok", "message": "백그라운드 빌드 완료"}
 
 
 # ✅ 3. LLM2 최종 응답: 고급 GPT 실행

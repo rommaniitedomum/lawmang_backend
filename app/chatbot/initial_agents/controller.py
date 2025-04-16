@@ -22,15 +22,15 @@ async def run_initial_controller(
             stop_event=stop_event,
         )
     )
-    # ask_human_task = asyncio.create_task(
-    #     ask_human_agent.ask_human(
-    #         user_query=user_query,
-    #         llm1_answer=None,
-    #         current_yes_count=current_yes_count,
-    #         template_data=None,
-    #         initial_response=None,
-    #     )
-    # )
+    ask_human_task = asyncio.create_task(
+        ask_human_agent.ask_human(
+            user_query=user_query,
+            llm1_answer=None,
+            current_yes_count=current_yes_count,
+            template_data=None,
+            initial_response=None,
+        )
+    )
 
     # ✅ LLM1 먼저 기다림
     initial_result = await chatbot_task
@@ -54,7 +54,7 @@ async def run_initial_controller(
                 template_data=None,
                 initial_response=None,
             ),
-            timeout=12.0,  # 혹시 오래 걸릴 경우 방지
+            timeout=8.0,  # 혹시 오래 걸릴 경우 방지
         )
         # print("✅ [controller] ask_human 반환 성공:", ask_result)
     except asyncio.TimeoutError:
