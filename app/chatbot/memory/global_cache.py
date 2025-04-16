@@ -1,21 +1,33 @@
-from typing import Any, Dict, Optional
+# ✅ app/chatbot/memory/global_cache.py
+
+from typing import Dict
 from langchain.memory import ConversationBufferMemory
+from langchain.schema import SystemMessage
 import json
 import datetime
-from langchain.schema import SystemMessage
 
-# LangChain의 메모리 인스턴스 (대화 히스토리 저장용)
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+# ✅ 싱글톤 메모리 인스턴스
+_memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
 
+def get_memory():
+    return _memory
+
+
+# ✅ 날짜 처리 가능한 JSON 인코더
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (datetime.date, datetime.datetime)):
             return obj.isoformat()
         return super().default(obj)
 
+
+# ✅ 템플릿 저장
 def store_template_in_memory(template: dict) -> None:
-    # 기존 TEMPLATE_DATA 메시지 제거
+    memory = get_memory()
+    if not isinstance(template, dict) or "template" not in template:
+        raise ValueError("❌ 유효하지 않은 템플릿 구조입니다.")
+
     memory.chat_memory.messages = [
         m
         for m in memory.chat_memory.messages
@@ -27,14 +39,24 @@ def store_template_in_memory(template: dict) -> None:
     memory.chat_memory.add_message(SystemMessage(content=message_content))
 
 
+# ✅ 템플릿 조회
 def retrieve_template_from_memory() -> dict:
-    """
-    memory에서 저장된 시스템 메시지 중 TEMPLATE_DATA: 로 시작하는 메시지를 찾아
-    JSON을 파싱한 후 템플릿 dict를 반환합니다.
-    만약 저장된 템플릿이 없다면 빈 dict를 반환합니다.
-    """
+    memory = get_memory()
     for message in memory.chat_memory.messages:
         if message.content.startswith("TEMPLATE_DATA:"):
             template_json = message.content[len("TEMPLATE_DATA:") :]
-            return json.loads(template_json)
+            try:
+                return json.loads(template_json)
+            except json.JSONDecodeError:
+                return {}
     return {}
+
+
+# ✅ 템플릿 초기화
+def clear_template_from_memory() -> None:
+    memory = get_memory()
+    memory.chat_memory.messages = [
+        m
+        for m in memory.chat_memory.messages
+        if not m.content.startswith("TEMPLATE_DATA:")
+    ]

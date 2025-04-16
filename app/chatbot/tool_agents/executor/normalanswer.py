@@ -8,6 +8,9 @@ from app.chatbot.tool_agents.utils.utils import (
     insert_hyperlinks_into_text,
 )
 from langchain.memory import ConversationBufferMemory
+from langchain_teddynote import logging
+
+logging.langsmith("llamaproject")
 
 # ✅ LangChain ChatOpenAI
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -88,7 +91,7 @@ def run_final_answer_generation(
     model: str = "gpt-4",
 ) -> str:
     final_prompt = build_final_answer_prompt(template, strategy, precedent, user_query)
-
+    print("\n🤖 AI 답변:")
     final_answer = ""
 
     # ✅ LangChain ChatOpenAI (Streaming)

@@ -10,11 +10,12 @@ from app.chatbot.tool_agents.utils.utils import (
     evalandsave_llm2_template_with_es,
     calculate_llm2_accuracy_score,
 )
-from app.chatbot.memory.global_cache import memory  # ConversationBufferMemory 인스턴스
 # 글로벌 캐시 기능: 템플릿을 시스템 메시지로 저장하고 조회하는 함수들
 from app.chatbot.memory.global_cache import (
-    retrieve_template_from_memory,store_template_in_memory
+    store_template_in_memory,
+    retrieve_template_from_memory,
 )
+
 from app.chatbot.initial_agents.prompt_tone_selector import get_prompt_by_score
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -25,7 +26,11 @@ def load_llm():
         model="gpt-3.5-turbo",
         api_key=OPENAI_API_KEY,
         temperature=0.3,
-        max_tokens=2048,
+        max_tokens=1024,
+        request_timeout=15,
+        top_p=0.9,
+        frequency_penalty=0,
+        presence_penalty=0,
     )
 
 
@@ -99,8 +104,7 @@ class AskHumanAgent:
         )
         response = await self.llm.ainvoke(prompt)
         return response.content.strip()
-    
-    
+
     async def ask_human(
         self,
         user_query,
@@ -109,8 +113,38 @@ class AskHumanAgent:
         template_data=None,
         initial_response: Optional[str] = None,
     ):
-        # ✅ 1. 사용자 ES 점수
-        es_result = await async_ES_search_one([user_query])
+        # print("🔍 [ask_human] ES prefetch 시작")
+        es_task = asyncio.create_task(async_ES_search_one([user_query]))
+
+        # print("📦 [ask_human] 템플릿 로딩 중...")
+        cached_data = retrieve_template_from_memory()
+        accuracy = 0
+        evaluating_now = False
+
+        if cached_data and cached_data.get("built_by_llm2"):
+            if not cached_data.get("updated_by_es"):
+                # print("🧠 [ask_human] ES 기반 평가 수행 중...")
+                evaluating_now = True
+                await evalandsave_llm2_template_with_es(cached_data, user_query)
+                cached_data["updated_by_es"] = True
+
+            template_score = max(
+                cached_data.get("template", {}).get("summary_score", 0),
+                cached_data.get("template", {}).get("explanation_score", 0),
+                cached_data.get("template", {}).get("ref_question_score", 0),
+            )
+            accuracy = calculate_llm2_accuracy_score(template_score, 0)
+            cached_data["llm2_accuracy_score"] = accuracy
+            store_template_in_memory(cached_data)
+        elif cached_data:
+            accuracy = cached_data.get("llm2_accuracy_score", 0)
+        else:
+            accuracy = 0
+
+        # print("⏳ [ask_human] ES 결과 수집 대기")
+        es_result = await es_task
+        # print(f"✅ [ask_human] ES 완료, max_score={es_result.get('max_score')}")
+
         max_score = es_result.get("max_score", 0)
         hits = es_result.get("hits", [])
 
@@ -144,13 +178,16 @@ class AskHumanAgent:
 
 
         # ✅ 4. fallback 판단 기준
-        fallback_threshold = 15
-        if 0 < accuracy < 50:
-            fallback_threshold = int(15 + (50 - accuracy) * 0.5)
-
+        # fallback_threshold = 8
+        # if 0 < accuracy < 15:
+        #     fallback_threshold = int(10 + (30 - accuracy) * 0.3)
+            
+        # ✅ 6. YES 감지 및 누적
+        yes_count_detected = 1 if llm1_answer and "###yes" in llm1_answer.lower() else 0
+        total_yes_count = current_yes_count + yes_count_detected
+        
         if not evaluating_now and (
             (llm1_answer and "###no" in llm1_answer.lower())
-            or (accuracy < 50 and max_score < fallback_threshold)
         ):
 
             return {
@@ -189,11 +226,6 @@ class AskHumanAgent:
                 },
                 "precedent": {},
             }
-
-        # ✅ 6. YES 감지 및 누적
-        yes_count_detected = 1 if llm1_answer and "###yes" in llm1_answer.lower() else 0
-        total_yes_count = current_yes_count + yes_count_detected
-
         # ✅ 7. 후속 질문 생성
         mcq_q = await self.generate_mcq_question(
             user_query, llm1_answer or "", total_yes_count, template_data

@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import os
@@ -11,7 +10,7 @@ from langchain_community.vectorstores import FAISS
 from app.chatbot.tool_agents.executor.normalanswer import run_final_answer_generation
 from app.chatbot.initial_agents.controller import run_initial_controller
 from app.chatbot.tool_agents.controller import run_full_consultation
-from app.chatbot.tool_agents.utils.utils import faiss_kiwi,update_llm2_template_with_es
+from app.chatbot.tool_agents.utils.utils import faiss_kiwi, update_llm2_template_with_es
 from app.chatbot.memory.global_cache import retrieve_template_from_memory
 from fastapi import FastAPI
 
@@ -43,6 +42,8 @@ def load_faiss():
     except Exception as e:
         # print(f"❌ FAISS 로드 실패: {e}")
         return None
+
+
 class QueryRequest(BaseModel):
     query: str
 
@@ -67,16 +68,14 @@ async def chatbot_initial(request: QueryRequest):
         current_yes_count=0,
         template_data=template_data,
         stop_event=stop_event,
-        
     )
-
     # ✅ 비동기 후처리: 템플릿 증강 (LLM2 템플릿이 있는 경우에만)
     cached_template = retrieve_template_from_memory()
     if cached_template and cached_template.get("built_by_llm2"):
         asyncio.create_task(update_llm2_template_with_es(cached_template, user_query))
 
     return {
-        "mcq_question": result.get("mcq_question")or "⚠️ fallback 응답이 없습니다.",
+        "mcq_question": result.get("mcq_question") or "⚠️ fallback 응답이 없습니다.",
         "yes_count": result.get("yes_count", 0),
         "is_mcq": result.get(
             "is_mcq", True
