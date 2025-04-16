@@ -46,7 +46,6 @@ def load_faiss():
 class QueryRequest(BaseModel):
     query: str
 
-
 @router.post("/initial")
 async def chatbot_initial(request: QueryRequest):
     user_query = request.query.strip()
@@ -69,8 +68,14 @@ async def chatbot_initial(request: QueryRequest):
         stop_event=stop_event,
     )
 
-    # ✅ LLM2 캐시된 템플릿이 있다면 포함해서 리턴
+    # ✅ 템플릿 1차 조회
     cached_template = retrieve_template_from_memory()
+
+    # ✅ 템플릿이 없거나 빌드되지 않은 경우 → 0.3초 대기 후 재시도
+    if not cached_template or not cached_template.get("built_by_llm2"):
+        await asyncio.sleep(0.3)
+        cached_template = retrieve_template_from_memory()
+
     if cached_template and cached_template.get("built_by_llm2"):
         result["template"] = cached_template.get("template", {})
         result["strategy"] = cached_template.get("strategy", {})
