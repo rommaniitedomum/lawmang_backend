@@ -84,7 +84,6 @@ async def chatbot_initial(request: QueryRequest):
     }
 
 
-# ✅ 2. LLM2 빌드 전용: 전략/판례 캐싱만 수행
 @router.post("/prepare")
 async def chatbot_prepare(request: QueryRequest):
     user_query = request.query.strip()
@@ -95,16 +94,18 @@ async def chatbot_prepare(request: QueryRequest):
     keywords = faiss_kiwi.extract_top_keywords_faiss(user_query, faiss_db)
     stop_event = asyncio.Event()
 
-    # 전략 + 판례만 생성 (GPT 호출 없이)
-    await run_full_consultation(
-        user_query=user_query,
-        search_keywords=keywords,
-        model="gpt-4",
-        build_only=True,
-        stop_event=stop_event,
+    # ✅ 백그라운드 작업으로 처리
+    asyncio.create_task(
+        run_full_consultation(
+            user_query=user_query,
+            search_keywords=keywords,
+            model="gpt-4",
+            build_only=True,
+            stop_event=stop_event,
+        )
     )
 
-    return {"status": "ok", "message": "백그라운드 빌드 완료"}
+    return {"status": "ok", "message": "LLM2 빌드 백그라운드 시작됨"}
 
 
 # ✅ 3. LLM2 최종 응답: 고급 GPT 실행
